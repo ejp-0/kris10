@@ -165,24 +165,33 @@
     display:grid;
     grid-template-columns:repeat(4, 1fr);
     grid-template-rows:repeat(2, 1fr);
-    gap:8px;
-    width:100%; max-width:320px;
-    margin:20px auto;
+    gap:10px;
+    width:100%; max-width:400px;
+    margin:22px auto;
   }
-  .burst-frame img{
+  .burst-item{
+    animation:floaty 3.2s ease-in-out infinite;
+  }
+  .burst-item img{
     width:100%; aspect-ratio:1/1; object-fit:cover;
-    border-radius:10px;
+    border-radius:12px;
     border:2px solid rgba(255,255,255,.25);
-    box-shadow:0 8px 18px rgba(0,0,0,.35);
+    box-shadow:0 10px 22px rgba(0,0,0,.4);
+    display:block;
     transform:rotate(var(--rot, 0deg)) scale(0);
     opacity:0;
-    animation:burstIn .5s cubic-bezier(.2,1.4,.4,1) forwards;
+    animation:burstIn .55s cubic-bezier(.2,1.4,.4,1) forwards;
   }
   @keyframes burstIn{
     to{ transform:rotate(var(--rot, 0deg)) scale(1); opacity:1; }
   }
+  @keyframes floaty{
+    0%, 100%{ transform:translateY(0); }
+    50%{ transform:translateY(-7px); }
+  }
   @media (prefers-reduced-motion: reduce){
-    .burst-frame img{ animation:none; transform:rotate(var(--rot,0deg)) scale(1); opacity:1; }
+    .burst-item{ animation:none; }
+    .burst-item img{ animation:none; transform:rotate(var(--rot,0deg)) scale(1); opacity:1; }
   }
 
   .play-badge{
@@ -230,6 +239,53 @@
     cursor:pointer;
   }
 
+  /* ---------- start screen ---------- */
+  .start-screen{
+    position:absolute; inset:0; z-index:100;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding:40px;
+    background:radial-gradient(120% 120% at 50% 0%, #5B2DBD 0%, #1B0F3D 65%);
+    color:#FFF8E7;
+    transition:opacity .45s ease, visibility .45s ease;
+  }
+  .start-screen.hidden{
+    opacity:0; visibility:hidden; pointer-events:none;
+  }
+  .start-icon{
+    font-size:48px;
+    margin-bottom:18px;
+  }
+  .start-eyebrow{
+    font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+    color:#D9C9FF; font-weight:600; margin-bottom:14px;
+  }
+  .start-headline{
+    font-family:var(--font-display);
+    font-size:clamp(28px, 8vw, 40px);
+    line-height:1.1;
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .start-sub{
+    font-size:15px; line-height:1.5; color:#D9C9FF;
+    max-width:280px; margin:0 auto 30px;
+  }
+  .start-btn{
+    font-family:var(--font-body);
+    font-weight:700; font-size:15px;
+    color:#1B0F3D;
+    background:#FFF8E7;
+    border:none; border-radius:999px;
+    padding:16px 38px;
+    cursor:pointer;
+    letter-spacing:.02em;
+    display:flex; align-items:center; gap:10px;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+  }
+  .start-btn:active{ transform:scale(0.97); }
+
   @media (prefers-reduced-motion: reduce){
     .slide{ transition:none; }
   }
@@ -243,6 +299,18 @@
   <div class="tap-zone left" id="tapLeft"></div>
   <div class="tap-zone right" id="tapRight"></div>
   <button class="sound-toggle" id="soundToggle">🔇</button>
+  <audio id="bgMusic" loop muted preload="auto"></audio>
+
+  <!-- ---------- start screen ---------- -->
+  <div class="start-screen" id="startScreen">
+    <div class="start-icon">🎉</div>
+    <div class="start-eyebrow">Your Birthday, Wrapped</div>
+    <div class="start-headline">Tap to Begin</div>
+    <div class="start-sub">Turn your sound on.</div>
+    <button class="start-btn" id="startBtn">
+      <span>▶</span> Watch Now
+    </button>
+  </div>
 </div>
 
 <script>
@@ -256,11 +324,18 @@
    - "photo"  : single photo with caption
    - "video"  : single video with caption (autoplays muted, tap sound icon to unmute)
    - "grid"   : 4-photo grid ("squad" style)
-   - "finale" : closing message with confetti + replay button
+   - "burst"  : 8-photo animated collage (pops in, then gently floats)
+   - add finale:true to any slide to make it the closer (confetti + replay button)
 
    duration is in ms and controls how long the progress segment
    takes to fill before auto-advancing to the next slide.
    Video slides use the video's own length instead.
+
+   music (optional) : path to an mp3/m4a in /media. Plays on loop while
+   that slide is active and crossfades into the next slide's track.
+   Leave it out for silence on that slide. On "video" slides the video's
+   own audio plays instead — only add music there if you want it layered
+   underneath (both respect the same 🔇 sound toggle).
 ============================================================ */
 const NAME = "EJ";
 
@@ -272,49 +347,53 @@ const SLIDES = [
   {
     type:"photo",
     theme:"violet",
-    duration:5000,
-    eyebrow:"Your Birthday, Wrapped",
-    headline:"The Year in Review",
-    caption:"Add your caption here",
-    src:"media/photo1.png"
+    duration:25000,
+    eyebrow:"Eyyy 16 kana?",
+    headline:"Ganda ng ngiti ah?",
+    caption:"",
+    src:"media/photo1.png",
+    music:"media/music1.mp3"
   },
   // slide 2 — photo
   {
     type:"photo",
     theme:"ocean",
-    duration:5000,
-    eyebrow:"Top Moment",
-    headline:"Add a headline",
-    caption:"Add your caption here",
-    src:"media/photo2.jpg"
+    duration:25000,
+    eyebrow:"Cute q",
+    headline:"Smol but byutipol",
+    caption:" ",
+    src:"media/photo2.jpg",
+    music:"media/music2.mp3"
   },
-  // slide 3 — video
+  // slide 3 — video (music dominates: video's own audio is ducked way down)
   {
     type:"video",
     theme:"ember",
-    eyebrow:"A Message For You",
-    headline:"Add a headline",
-    caption:"Tap 🔇 for sound",
+    eyebrow:"By Chard HAHAHA",
+    headline:"Human Drone",
+    caption:"",
     src:"media/video1.mp4",
-    poster:"media/video1-poster.jpg"
+    poster:"media/video1-poster.jpg",
+    music:"media/music3.mp3"
   },
-  // slide 4 — video
+  // slide 4 — video (music dominates: video's own audio is ducked way down)
   {
     type:"video",
     theme:"forest",
-    eyebrow:"One More Thing",
-    headline:"Add a headline",
-    caption:"Tap 🔇 for sound",
+    eyebrow:"wala na q maisip na caption",
+    headline:"HEHE",
+    caption:"",
     src:"media/video2.mp4",
-    poster:"media/video2-poster.jpg"
+    poster:"media/video2-poster.jpg",
+    music:"media/music4.mp3"
   },
   // slide 5 — burst of 8 photos
   {
     type:"burst",
     theme:"gold",
-    duration:6000,
-    eyebrow:"The Whole Crew",
-    headline:"So Many Memories",
+    duration:25000,
+    eyebrow:"from Team C to team Volts",
+    headline:"SUPER TEAMMATES",
     photos:[
       "media/burst1.png",
       "media/burst2.jpg",
@@ -324,16 +403,18 @@ const SLIDES = [
       "media/burst6.png",
       "media/burst7.png",
       "media/burst8.png"
-    ]
+    ],
+    music:"media/music5.mp3"
   },
   // slide 6 — photo (closing slide, with confetti + replay button)
   {
     type:"photo",
     theme:"finale",
     finale:true,
-    eyebrow:"Happy Birthday",
-    headline:`Here's to you, ${NAME}!`,
-    caption:"Add your caption here",
+    eyebrow:"May all your dreams come true, mabuhay ka hanggang gusto mo",
+    music:"media/music6.mp3",
+    headline:`HAPPY BIRTHDAY, KRIS10!`,
+    caption:" ",
     src:"media/photo3.jpg"
   }
 ];
@@ -345,12 +426,17 @@ const SLIDES = [
 const deck = document.getElementById('deck');
 const progressBar = document.getElementById('progress');
 const soundToggle = document.getElementById('soundToggle');
+const bgMusic = document.getElementById('bgMusic');
+const startScreen = document.getElementById('startScreen');
+const startBtn = document.getElementById('startBtn');
+bgMusic.muted = true; // starts muted, same as video — respects the 🔇 toggle
 let current = 0;
 let timer = null;
 let segStart = 0;
 let segDuration = 0;
 let paused = false;
 let muted = true;
+let started = false;
 
 function renderSlide(cfg, idx){
   const el = document.createElement('div');
@@ -395,7 +481,10 @@ function renderSlide(cfg, idx){
     const rotations = [-9, 6, -4, 8, -7, 5, 9, -6];
     inner += `<div class="headline">${cfg.headline}</div>
                <div class="burst-frame">
-                 ${cfg.photos.map((p, i) => `<img src="${p}" alt="" style="--rot:${rotations[i % rotations.length]}deg; animation-delay:${i * 90}ms;">`).join('')}
+                 ${cfg.photos.map((p, i) => `
+                   <div class="burst-item" style="animation-delay:${0.6 + i * 0.12}s">
+                     <img src="${p}" alt="" style="--rot:${rotations[i % rotations.length]}deg; animation-delay:${i * 90}ms;">
+                   </div>`).join('')}
                </div>`;
   }
 
@@ -443,6 +532,7 @@ function showSlide(idx){
   current = idx;
 
   const cfg = SLIDES[idx];
+  crossfadeMusic(cfg.music);
 
   if(cfg.finale){
     // closing slide: show its media normally, but pause the deck,
@@ -460,12 +550,15 @@ function showSlide(idx){
   } else if(cfg.type === 'video'){
     const vid = getVideoEl(idx);
     vid.muted = muted;
+    // when a music track is set for this slide, the music should dominate —
+    // duck the video's own audio way down instead of competing with it
+    vid.volume = cfg.music ? 0.1 : 1;
     vid.currentTime = 0;
     vid.play().catch(()=>{});
     vid.onloadedmetadata = () => startProgress(idx, (vid.duration || 6) * 1000);
     if(vid.readyState >= 1) startProgress(idx, (vid.duration || 6) * 1000);
   } else {
-    startProgress(idx, cfg.duration || 4000);
+    startProgress(idx, cfg.duration || 25000);
   }
 }
 
@@ -489,9 +582,11 @@ function startProgress(idx, duration){
 }
 
 function next(){
+  if(!started) return;
   if(current < SLIDES.length - 1) showSlide(current + 1);
 }
 function prev(){
+  if(!started) return;
   if(current > 0) showSlide(current - 1);
 }
 
@@ -503,13 +598,45 @@ soundToggle.addEventListener('click', (e) => {
   muted = !muted;
   soundToggle.textContent = muted ? '🔇' : '🔊';
   const vid = getVideoEl(current);
-  if(vid) vid.muted = muted;
+  if(vid){
+    vid.muted = muted;
+    vid.volume = SLIDES[current] && SLIDES[current].music ? 0.1 : 1;
+  }
+  bgMusic.muted = muted;
+  // this click is a guaranteed user gesture — use it to (re)start
+  // playback in case autoplay was blocked earlier
+  if(!muted && bgMusic.src && bgMusic.paused){
+    bgMusic.play().catch(err => console.warn('Music playback blocked:', err));
+  }
+});
+
+// ---------- start button ----------
+// Browsers block audio/video with sound until a real user gesture
+// happens. This button click IS that gesture, so we use it to unmute
+// and kick off music/video playback right as the deck begins.
+startBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if(started) return;
+  started = true;
+
+  // unmute so the experience opens with sound already on
+  muted = false;
+  soundToggle.textContent = '🔊';
+  bgMusic.muted = false;
+
+  startScreen.classList.add('hidden');
+  showSlide(0);
+
+  // extra safety: some browsers still want an explicit play() call
+  // inside the gesture handler itself
+  bgMusic.play().catch(() => {});
 });
 
 // swipe support
 let touchStartX = 0;
 document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
 document.addEventListener('touchend', e => {
+  if(!started) return;
   const dx = e.changedTouches[0].clientX - touchStartX;
   if(dx > 50) prev();
   else if(dx < -50) next();
@@ -517,8 +644,63 @@ document.addEventListener('touchend', e => {
 
 // keyboard support
 document.addEventListener('keydown', e => {
+  if(!started) return;
   if(e.key === 'ArrowRight') next();
   if(e.key === 'ArrowLeft') prev();
+});
+
+// ---------- per-slide background music ----------
+let fadeTimer = null;
+
+function fadeAudio(audio, target, ms, onDone){
+  clearInterval(fadeTimer);
+  const steps = 12;
+  const stepTime = ms / steps;
+  const start = audio.volume;
+  const delta = (target - start) / steps;
+  let i = 0;
+  fadeTimer = setInterval(() => {
+    i++;
+    const v = start + delta * i;
+    audio.volume = Math.min(1, Math.max(0, v));
+    if(i >= steps){
+      clearInterval(fadeTimer);
+      audio.volume = target;
+      if(onDone) onDone();
+    }
+  }, stepTime);
+}
+
+function crossfadeMusic(src){
+  // no track for this slide: fade out whatever's playing
+  if(!src){
+    if(!bgMusic.paused){
+      fadeAudio(bgMusic, 0, 250, () => bgMusic.pause());
+    }
+    return;
+  }
+  // same track already playing (e.g. re-showing a slide): let it keep looping
+  if(bgMusic.dataset.src === src && !bgMusic.paused){
+    return;
+  }
+  fadeAudio(bgMusic, 0, 250, () => {
+    bgMusic.src = src;
+    bgMusic.dataset.src = src;
+    bgMusic.currentTime = 0;
+    bgMusic.muted = muted;
+    bgMusic.volume = 0;
+    bgMusic.load();
+    bgMusic.play()
+      .then(() => fadeAudio(bgMusic, 1, 350))
+      .catch(err => {
+        // most likely cause: the browser blocked autoplay, or the file
+        // path in SLIDES[].music doesn't match a real file in /media
+        console.warn(`Could not play "${src}":`, err);
+      });
+  });
+}
+bgMusic.addEventListener('error', () => {
+  console.warn(`Music file not found or unsupported: ${bgMusic.src}`);
 });
 
 // ---------- confetti (simple canvas particle burst) ----------
@@ -568,9 +750,11 @@ function startConfetti(){
 }
 
 // ---------- init ----------
+// Deck is built and progress bar is ready, but the first slide isn't
+// shown (and nothing plays) until the viewer taps "Watch Now" on the
+// start screen. That tap is what unlocks audio/video autoplay.
 buildProgress();
 buildDeck();
-showSlide(0);
 </script>
 </body>
 </html>
