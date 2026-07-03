@@ -519,6 +519,13 @@ function getVideoEl(idx){
 
 function showSlide(idx){
   clearTimeout(timer);
+  // stop any video that might still be playing from a previous slide —
+  // otherwise its audio (and the video itself, since it loops) keeps
+  // running quietly in the background and bleeds into later slides
+  document.querySelectorAll('.slide video').forEach(v => {
+    v.pause();
+    v.currentTime = 0;
+  });
   document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.seg').forEach((s, i) => {
     s.classList.toggle('done', i < idx);
