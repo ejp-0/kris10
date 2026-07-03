@@ -333,9 +333,10 @@
 
    music (optional) : path to an mp3/m4a in /media. Plays on loop while
    that slide is active and crossfades into the next slide's track.
-   Leave it out for silence on that slide. On "video" slides the video's
-   own audio plays instead — only add music there if you want it layered
-   underneath (both respect the same 🔇 sound toggle).
+   Leave it out for silence on that slide. On "video" slides, if a music
+   track is set, the video's own audio is fully muted so the music plays
+   alone; if no music is set, the video's own audio plays and follows the
+   🔇 sound toggle like normal.
 ============================================================ */
 const NAME = "EJ";
 
@@ -365,7 +366,7 @@ const SLIDES = [
     src:"media/photo2.JPG",
     music:"media/music2.mp3"
   },
-  // slide 3 — video (music dominates: video's own audio is ducked way down)
+  // slide 3 — video (music dominates: video's own audio is fully muted)
   {
     type:"video",
     theme:"ember",
@@ -376,7 +377,7 @@ const SLIDES = [
     poster:"media/video1-poster.JPG",
     music:"media/music3.mp3"
   },
-  // slide 4 — video (music dominates: video's own audio is ducked way down)
+  // slide 4 — video (music dominates: video's own audio is fully muted)
   {
     type:"video",
     theme:"forest",
@@ -549,10 +550,9 @@ function showSlide(idx){
     // no auto-advance on the last slide
   } else if(cfg.type === 'video'){
     const vid = getVideoEl(idx);
-    vid.muted = muted;
-    // when a music track is set for this slide, the music should dominate —
-    // duck the video's own audio way down instead of competing with it
-    vid.volume = cfg.music ? 0.1 : 1;
+    // when a music track is set for this slide, the video's own audio is
+    // fully muted so the music plays alone
+    vid.muted = cfg.music ? true : muted;
     vid.currentTime = 0;
     vid.play().catch(()=>{});
     vid.onloadedmetadata = () => startProgress(idx, (vid.duration || 6) * 1000);
@@ -599,8 +599,8 @@ soundToggle.addEventListener('click', (e) => {
   soundToggle.textContent = muted ? '🔇' : '🔊';
   const vid = getVideoEl(current);
   if(vid){
-    vid.muted = muted;
-    vid.volume = SLIDES[current] && SLIDES[current].music ? 0.1 : 1;
+    const hasMusic = SLIDES[current] && SLIDES[current].music;
+    vid.muted = hasMusic ? true : muted;
   }
   bgMusic.muted = muted;
   // this click is a guaranteed user gesture — use it to (re)start
@@ -620,7 +620,7 @@ startBtn.addEventListener('click', (e) => {
   started = true;
 
   // unmute so the experience opens with sound already on
-  muted = true;
+  muted = false;
   soundToggle.textContent = '🔊';
   bgMusic.muted = false;
 
