@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Birthday Wrapped</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     EDIT ME: swap fonts, colors, or slide themes here.
+     Each slide has a data-theme attribute below that maps to
+     one of these token sets.
+  ============================================================ */
+  :root{
+    --font-display:'Archivo Black', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --radius:20px;
+  }
+
+  [data-theme="violet"]{
+    --bg-a:#1B0F3D; --bg-b:#5B2DBD; --accent:#FF3EC9; --text:#FFF8E7; --sub:#D9C9FF;
+  }
+  [data-theme="forest"]{
+    --bg-a:#06281B; --bg-b:#0F5E3C; --accent:#C6FF3D; --text:#F4FFE9; --sub:#B7E5C4;
+  }
+  [data-theme="ocean"]{
+    --bg-a:#08152E; --bg-b:#0F3E6B; --accent:#23E6FF; --text:#EAF7FF; --sub:#9FD6EE;
+  }
+  [data-theme="ember"]{
+    --bg-a:#3D0B1E; --bg-b:#8C1F3B; --accent:#FF6B4A; --text:#FFF1EA; --sub:#FFC9B8;
+  }
+  [data-theme="gold"]{
+    --bg-a:#2E2205; --bg-b:#8A5B0C; --accent:#FFD23F; --text:#FFF7E0; --sub:#FCE3A6;
+  }
+  [data-theme="finale"]{
+    --bg-a:#150826; --bg-b:#4A0E63; --accent:#FF3EC9; --text:#FFF8E7; --sub:#E9D3FF;
+  }
+
+  *{margin:0; padding:0; box-sizing:border-box;}
+  html,body{height:100%; background:#000; overflow:hidden;}
+  body{
+    font-family:var(--font-body);
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .wrap{
+    position:relative;
+    width:100%;
+    height:100dvh;
+    max-width:480px;
+    margin:0 auto;
+    overflow:hidden;
+    background:#000;
+  }
+
+  /* ---------- progress bar (story style) ---------- */
+  .progress{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; gap:6px;
+    padding:14px 14px 0 14px;
+    z-index:50;
+  }
+  .progress .seg{
+    flex:1; height:3px; border-radius:3px;
+    background:rgba(255,255,255,0.28);
+    overflow:hidden;
+  }
+  .progress .seg .fill{
+    height:100%; width:0%;
+    background:#fff;
+    border-radius:3px;
+  }
+  .progress .seg.done .fill{ width:100%; }
+  .progress .seg.active .fill{ transition:width linear; }
+
+  /* ---------- slide deck ---------- */
+  .deck{ position:relative; width:100%; height:100%; }
+
+  .slide{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding:80px 32px 60px;
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-b) 0%, var(--bg-a) 65%);
+    color:var(--text);
+    opacity:0; visibility:hidden;
+    transform:scale(1.04);
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  .slide.active{
+    opacity:1; visibility:visible; transform:scale(1);
+    position:relative;
+  }
+
+  .eyebrow{
+    font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--sub); font-weight:600; margin-bottom:18px;
+  }
+
+  .headline{
+    font-family:var(--font-display);
+    font-size:clamp(30px, 8vw, 46px);
+    line-height:1.05;
+    color:var(--text);
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .headline .accent{ color:var(--accent); }
+
+  .body-text{
+    font-size:16px; line-height:1.5; color:var(--sub);
+    max-width:320px; margin:0 auto;
+  }
+
+  .big-stat{
+    font-family:var(--font-display);
+    font-size:clamp(64px, 22vw, 120px);
+    line-height:0.9;
+    color:var(--accent);
+    margin:8px 0 6px;
+  }
+
+  /* ---------- media frames ---------- */
+  .media-frame{
+    width:100%; max-width:300px;
+    aspect-ratio:4/5;
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin:22px auto;
+    box-shadow:0 20px 50px rgba(0,0,0,.45);
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.15);
+    position:relative;
+  }
+  .media-frame img, .media-frame video{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .media-caption{
+    position:absolute; left:0; right:0; bottom:0;
+    padding:14px 16px;
+    background:linear-gradient(0deg, rgba(0,0,0,.65), transparent);
+    font-size:13px; font-weight:600; text-align:left; color:#fff;
+  }
+
+  /* grid slide for "squad" style layout */
+  .grid-frame{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    width:100%; max-width:300px;
+    margin:20px auto;
+  }
+  .grid-frame img{
+    width:100%; aspect-ratio:1/1; object-fit:cover;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.15);
+  }
+
+  /* burst-of-8 collage for slide 5 */
+  .burst-frame{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    grid-template-rows:repeat(2, 1fr);
+    gap:8px;
+    width:100%; max-width:320px;
+    margin:20px auto;
+  }
+  .burst-frame img{
+    width:100%; aspect-ratio:1/1; object-fit:cover;
+    border-radius:10px;
+    border:2px solid rgba(255,255,255,.25);
+    box-shadow:0 8px 18px rgba(0,0,0,.35);
+    transform:rotate(var(--rot, 0deg)) scale(0);
+    opacity:0;
+    animation:burstIn .5s cubic-bezier(.2,1.4,.4,1) forwards;
+  }
+  @keyframes burstIn{
+    to{ transform:rotate(var(--rot, 0deg)) scale(1); opacity:1; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .burst-frame img{ animation:none; transform:rotate(var(--rot,0deg)) scale(1); opacity:1; }
+  }
+
+  .play-badge{
+    position:absolute; top:12px; right:12px;
+    width:34px; height:34px; border-radius:50%;
+    background:rgba(0,0,0,.5);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:14px;
+  }
+
+  /* ---------- tap zones ---------- */
+  .tap-zone{
+    position:absolute; top:0; bottom:0; width:34%;
+    z-index:40; background:transparent;
+  }
+  .tap-zone.left{ left:0; }
+  .tap-zone.right{ right:0; }
+
+  /* ---------- finale confetti canvas ---------- */
+  #confetti{
+    position:absolute; inset:0; pointer-events:none; z-index:5;
+  }
+
+  .replay-btn{
+    margin-top:26px;
+    font-family:var(--font-body);
+    font-weight:700; font-size:14px;
+    color:var(--bg-a);
+    background:var(--text);
+    border:none; border-radius:999px;
+    padding:12px 26px;
+    cursor:pointer;
+    letter-spacing:.02em;
+    z-index:10; position:relative;
+  }
+
+  .sound-toggle{
+    position:absolute; bottom:18px; right:18px;
+    z-index:50;
+    width:38px; height:38px; border-radius:50%;
+    background:rgba(0,0,0,.4);
+    border:1px solid rgba(255,255,255,.25);
+    color:#fff; font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .slide{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="progress" id="progress"></div>
+  <div class="deck" id="deck"></div>
+  <div class="tap-zone left" id="tapLeft"></div>
+  <div class="tap-zone right" id="tapRight"></div>
+  <button class="sound-toggle" id="soundToggle">🔇</button>
+</div>
+
+<script>
+/* ============================================================
+   EDIT ME: this is the only section you should need to touch
+   to reskin the card for a new person / occasion.
+
+   Slide "type" options:
+   - "intro"  : big headline opener
+   - "stat"   : giant number + caption
+   - "photo"  : single photo with caption
+   - "video"  : single video with caption (autoplays muted, tap sound icon to unmute)
+   - "grid"   : 4-photo grid ("squad" style)
+   - "finale" : closing message with confetti + replay button
+
+   duration is in ms and controls how long the progress segment
+   takes to fill before auto-advancing to the next slide.
+   Video slides use the video's own length instead.
+============================================================ */
+const NAME = "EJ";
+
+/* All media is loaded from the /media subfolder next to this HTML file.
+   Put your files there using the names below, or edit the paths to match
+   whatever you name them. */
+const SLIDES = [
+  // slide 1 — photo
+  {
+    type:"photo",
+    theme:"violet",
+    duration:5000,
+    eyebrow:"Your Birthday, Wrapped",
+    headline:"The Year in Review",
+    caption:"Add your caption here",
+    src:"media/photo1.png"
+  },
+  // slide 2 — photo
+  {
+    type:"photo",
+    theme:"ocean",
+    duration:5000,
+    eyebrow:"Top Moment",
+    headline:"Add a headline",
+    caption:"Add your caption here",
+    src:"media/photo2.jpg"
+  },
+  // slide 3 — video
+  {
+    type:"video",
+    theme:"ember",
+    eyebrow:"A Message For You",
+    headline:"Add a headline",
+    caption:"Tap 🔇 for sound",
+    src:"media/video1.mp4",
+    poster:"media/video1-poster.jpg"
+  },
+  // slide 4 — video
+  {
+    type:"video",
+    theme:"forest",
+    eyebrow:"One More Thing",
+    headline:"Add a headline",
+    caption:"Tap 🔇 for sound",
+    src:"media/video2.mp4",
+    poster:"media/video2-poster.jpg"
+  },
+  // slide 5 — burst of 8 photos
+  {
+    type:"burst",
+    theme:"gold",
+    duration:6000,
+    eyebrow:"The Whole Crew",
+    headline:"So Many Memories",
+    photos:[
+      "media/burst1.png",
+      "media/burst2.jpg",
+      "media/burst3.jpg",
+      "media/burst4.png",
+      "media/burst5.png",
+      "media/burst6.png",
+      "media/burst7.png",
+      "media/burst8.png"
+    ]
+  },
+  // slide 6 — photo (closing slide, with confetti + replay button)
+  {
+    type:"photo",
+    theme:"finale",
+    finale:true,
+    eyebrow:"Happy Birthday",
+    headline:`Here's to you, ${NAME}!`,
+    caption:"Add your caption here",
+    src:"media/photo3.jpg"
+  }
+];
+
+/* ============================================================
+   Below this line: rendering + navigation engine.
+   You shouldn't need to edit this to reskin the card.
+============================================================ */
+const deck = document.getElementById('deck');
+const progressBar = document.getElementById('progress');
+const soundToggle = document.getElementById('soundToggle');
+let current = 0;
+let timer = null;
+let segStart = 0;
+let segDuration = 0;
+let paused = false;
+let muted = true;
+
+function renderSlide(cfg, idx){
+  const el = document.createElement('div');
+  el.className = 'slide';
+  el.dataset.theme = cfg.theme;
+  el.dataset.index = idx;
+
+  let inner = '';
+  if(cfg.eyebrow) inner += `<div class="eyebrow">${cfg.eyebrow}</div>`;
+
+  if(cfg.type === 'intro'){
+    inner += `<div class="headline">${cfg.headline}</div>
+               <div class="body-text">${cfg.body}</div>`;
+  }
+  else if(cfg.type === 'stat'){
+    inner += `<div class="big-stat">${cfg.stat}</div>
+               <div class="body-text">${cfg.body}</div>`;
+  }
+  else if(cfg.type === 'photo'){
+    inner += `<div class="headline">${cfg.headline}</div>
+               <div class="media-frame">
+                 <img src="${cfg.src}" alt="${cfg.caption || ''}">
+                 <div class="media-caption">${cfg.caption || ''}</div>
+               </div>`;
+  }
+  else if(cfg.type === 'video'){
+    inner += `<div class="headline">${cfg.headline}</div>
+               <div class="media-frame">
+                 <video playsinline muted loop poster="${cfg.poster || ''}">
+                   <source src="${cfg.src}" type="video/mp4">
+                 </video>
+                 <div class="media-caption">${cfg.caption || ''}</div>
+               </div>`;
+  }
+  else if(cfg.type === 'grid'){
+    inner += `<div class="headline">${cfg.headline}</div>
+               <div class="grid-frame">
+                 ${cfg.photos.map(p => `<img src="${p}" alt="">`).join('')}
+               </div>`;
+  }
+  else if(cfg.type === 'burst'){
+    const rotations = [-9, 6, -4, 8, -7, 5, 9, -6];
+    inner += `<div class="headline">${cfg.headline}</div>
+               <div class="burst-frame">
+                 ${cfg.photos.map((p, i) => `<img src="${p}" alt="" style="--rot:${rotations[i % rotations.length]}deg; animation-delay:${i * 90}ms;">`).join('')}
+               </div>`;
+  }
+
+  if(cfg.finale){
+    inner += `<canvas id="confetti"></canvas>
+               <button class="replay-btn" id="replayBtn">Watch Again</button>`;
+  }
+
+  el.innerHTML = inner;
+  return el;
+}
+
+function buildProgress(){
+  progressBar.innerHTML = '';
+  SLIDES.forEach((_, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    seg.innerHTML = `<div class="fill"></div>`;
+    progressBar.appendChild(seg);
+  });
+}
+
+function buildDeck(){
+  deck.innerHTML = '';
+  SLIDES.forEach((cfg, i) => deck.appendChild(renderSlide(cfg, i)));
+}
+
+function getVideoEl(idx){
+  return deck.querySelector(`.slide[data-index="${idx}"] video`);
+}
+
+function showSlide(idx){
+  clearTimeout(timer);
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.seg').forEach((s, i) => {
+    s.classList.toggle('done', i < idx);
+    s.classList.remove('active');
+    const fill = s.querySelector('.fill');
+    if(i < idx) fill.style.transition = 'none', fill.style.width = '100%';
+    if(i > idx) fill.style.transition = 'none', fill.style.width = '0%';
+  });
+
+  const slideEl = deck.querySelector(`.slide[data-index="${idx}"]`);
+  slideEl.classList.add('active');
+  current = idx;
+
+  const cfg = SLIDES[idx];
+
+  if(cfg.finale){
+    // closing slide: show its media normally, but pause the deck,
+    // burst confetti, and wait for the viewer to tap replay.
+    startConfetti();
+    document.getElementById('replayBtn').onclick = () => {
+      current = -1;
+      showSlide(0);
+    };
+    const seg = progressBar.children[idx];
+    seg.classList.add('active');
+    seg.querySelector('.fill').style.transition = 'none';
+    seg.querySelector('.fill').style.width = '100%';
+    // no auto-advance on the last slide
+  } else if(cfg.type === 'video'){
+    const vid = getVideoEl(idx);
+    vid.muted = muted;
+    vid.currentTime = 0;
+    vid.play().catch(()=>{});
+    vid.onloadedmetadata = () => startProgress(idx, (vid.duration || 6) * 1000);
+    if(vid.readyState >= 1) startProgress(idx, (vid.duration || 6) * 1000);
+  } else {
+    startProgress(idx, cfg.duration || 4000);
+  }
+}
+
+function startProgress(idx, duration){
+  const seg = progressBar.children[idx];
+  const fill = seg.querySelector('.fill');
+  seg.classList.add('active');
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  // force reflow so the transition below actually animates
+  void fill.offsetWidth;
+  fill.style.transition = `width ${duration}ms linear`;
+  fill.style.width = '100%';
+
+  segDuration = duration;
+  segStart = Date.now();
+
+  timer = setTimeout(() => {
+    if(idx < SLIDES.length - 1) showSlide(idx + 1);
+  }, duration);
+}
+
+function next(){
+  if(current < SLIDES.length - 1) showSlide(current + 1);
+}
+function prev(){
+  if(current > 0) showSlide(current - 1);
+}
+
+document.getElementById('tapRight').addEventListener('click', next);
+document.getElementById('tapLeft').addEventListener('click', prev);
+
+soundToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  muted = !muted;
+  soundToggle.textContent = muted ? '🔇' : '🔊';
+  const vid = getVideoEl(current);
+  if(vid) vid.muted = muted;
+});
+
+// swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if(dx > 50) prev();
+  else if(dx < -50) next();
+});
+
+// keyboard support
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight') next();
+  if(e.key === 'ArrowLeft') prev();
+});
+
+// ---------- confetti (simple canvas particle burst) ----------
+function startConfetti(){
+  const canvas = document.getElementById('confetti');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const wrap = document.querySelector('.wrap');
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+
+  const colors = ['#FF3EC9', '#FFD23F', '#23E6FF', '#C6FF3D', '#FF6B4A'];
+  const particles = Array.from({length:90}, () => ({
+    x: canvas.width / 2,
+    y: canvas.height / 3,
+    vx: (Math.random() - 0.5) * 10,
+    vy: (Math.random() - 1.2) * 10,
+    size: 4 + Math.random() * 5,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    rot: Math.random() * 360,
+    vr: (Math.random() - 0.5) * 10
+  }));
+
+  let frame = 0;
+  function tick(){
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.vy += 0.25;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+      ctx.restore();
+    });
+    if(frame < 220 && document.getElementById('confetti')){
+      requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  tick();
+}
+
+// ---------- init ----------
+buildProgress();
+buildDeck();
+showSlide(0);
+</script>
+</body>
+</html>
